@@ -1,47 +1,65 @@
 const express = require("express")
+const Campsite = require("../models/campsite")
+
 const campsiteRouter = express.Router()
 
 campsiteRouter.route("/")
 
 //* ENDPOINTS
-//.all is a catch all for all http verbs use this to set default props for all routing methods
-  .all((req,res,next)=> 
+
+.get((req,res, next)=>{
+   
+    Campsite.find()
+    .then(campsites=>{
+        res.statusCode=200
+        res.setHeader("Content-Type","application/json")
+        //res.json will send this information to the client no need to use res.end
+        res.json(campsites)
+    })
+    //this allows express to handle the error if there is one
+    .catch(err => next(err))
+})
+
+.post((req,res, next)=>
 {
-    res.statusCode= 200
-    //indicates we are going to send plain text in the response body
-    res.header("Content-Type", "text/plain")
-    //sends to the next relevant routing method, if not included would just stop here
-    next()
+    //mongoose will already check this to make sure it matches the schema we defined
+    Campsite.create(req.body)
+    .then(campsite=>{
+        console.log("Campsite Created", campsite);
+        res.statusCode= 200
+        res.setHeader("Content-Type", "application/json")
+        res.json(campsite)
+    })
+    .catch(err => next(err))
 })
 
-.get((req,res)=>{
-    res.end("Will send all the campsites to you")
-})
-
-.post((req,res)=>
-{
-    res.end(`Will add the campsite: ${req.body.name} with description: ${req.body.description}`)
-})
-
+//we can leave this as is because put is not an allowed operation on /campsites
 .put((req,res)=>{
     res.statusCode = 403; 
     res.end("PUT operation not supported on /campsites")
 })
 
-.delete((req,res)=>{
-    res.end("Deleting all campsites")
+.delete((req,res, next)=>{
+    Campsite.deleteMany()
+    .then(response => {
+        res.statusCode= 200
+        res.setHeader("Content-Type", "application/json")
+        res.json(response)
+    })
+    .catch(err => next(err))
 })
 
 campsiteRouter.route(`/:campsiteId`)
 
-.all((req,res,next)=> 
-{
-    res.statusCode= 200
-    res.header("Content-Type", "text/plain")
-    next()
-})
-.get((req,res)=>{
-    res.end(`Will send details of the campsite: ${req.params.campsiteId}`)
+.get((req,res, next)=>{
+    Campsite.findById(req.params.campsiteId)
+    .then(campsite=>{
+        console.log("Campsite Created", campsite);
+        res.statusCode= 200
+        res.setHeader("Content-Type", "application/json")
+        res.json(campsite)
+    })
+    .catch(err => next(err))
 })
 
 .post((req,res)=>
@@ -49,14 +67,24 @@ campsiteRouter.route(`/:campsiteId`)
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`)
 })
 
-.put((req,res)=>{
-    res.write(`Updating the campsite: ${req.params.campsiteId}\n`)
-    res.end(`Will update the campsite: ${req.body.name} 
-            with description: ${req.body.description}`)
+.put((req,res, next)=>{
+    Campsite.findByIdAndUpdate(req.params.campsiteId, {$set: req.body}, {new: true})
+    .then(campsite =>{
+        res.statusCode = 200
+        res.setHeader("Content-Type", "application/json")
+        res.json(campsite)
+    }) 
+    .catch(err => next(err))
 })
 
-.delete((req,res)=>{
-    res.end(`Deleting campsite: ${req.params.campsiteId}`)
+.delete((req,res, next)=>{
+    Campsite.findByIdAndDelete(req.params.campsiteId)
+    .then(response =>{
+        res.statusCode = 200
+        res.setHeader("Content-Type", "application/json")
+        res.json(response)
+    }) 
+    .catch(err => next(err))
 })
 
 module.exports = campsiteRouter
