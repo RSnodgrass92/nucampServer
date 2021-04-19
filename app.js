@@ -35,6 +35,44 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+//middle ware order matters, we put authentication check here if req does not pass, they will not move on to the rest
+function auth(req,res,next)
+{
+  console.log(req.headers);
+  const authHeader = req.headers.authorization
+  
+  //if no username/pass has been entered yet
+  if(!authHeader)
+  {
+    const err = new Error("You are not authenticated!")
+    res.setHeader("WWW-Authenticate", "Basic")
+    err.status= 401
+    return next(err)
+  }
+
+  //Buffer is from node, we don't need to require it, it has a method called .from() that can be used to decode the 
+  //username and password from base 64
+  const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":")
+  
+  const user= auth[0]
+  const pass= auth[1]
+
+  if (user === "admin" && pass === "password")
+  {
+    //now the user has be authorized
+    return next()
+  }
+  else
+  {
+    const err = Error("You are not authenticated!")
+    res.setHeader("WWW-Authenticate", "Basic")
+    err.status= 401
+    return next(err)
+  }
+}
+
+app.use(auth)
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
