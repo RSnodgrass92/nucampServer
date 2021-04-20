@@ -3,6 +3,9 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require("express-session")
+//calls the require function which returns a function, which is then passed the session argument and run
+const FileStore= require("session-file-store")(session)
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -34,49 +37,57 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+
+//pass in a secret key here, it could be any string
+//app.use(cookieParser("secretkey")); Express session offers its own implementation of cookies.
+//using both can cause conflicts so we will not use cookieParser
+app.use(session(
+  {
+    name: "session-id", 
+    secret: "secretkey", 
+    //saveUnintialized when a new session is created but no updates are made to it, at the end of the req it wont get saved. No cookie is sent to the client, this is to prevent having a bunch of empty session files and cookies from being set up. 
+    saveUninitialized: false, 
+    resave: false, 
+    //save to hard disk not just running application memory
+    store: new FileStore()
+  }
+))
+
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
 
 //middle ware order matters, we put authentication check here if req does not pass, they will not move on to the rest
 function auth(req,res,next)
 {
-  console.log(req.headers);
-  const authHeader = req.headers.authorization
-  
-  //if no username/pass has been entered yet
-  if(!authHeader)
+  //the session middleware will add a prop called session to the request object 
+  console.log(req.session);
+
+  //the singedCookies prop is provided by the cookie parser middleware
+  if(!req.session.user)
   {
-    const err = new Error("You are not authenticated!")
-    res.setHeader("WWW-Authenticate", "Basic")
-    err.status= 401
-    return next(err)
+        const err = new Error("You are not authenticated!")
+        err.status= 401
+        return next(err)
   }
 
-  //Buffer is from node, we don't need to require it, it has a method called .from() that can be used to decode the 
-  //username and password from base 64
-  const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":")
-  
-  const user= auth[0]
-  const pass= auth[1]
-
-  if (user === "admin" && pass === "password")
-  {
-    //now the user has be authorized
-    return next()
-  }
   else
   {
-    const err = Error("You are not authenticated!")
-    res.setHeader("WWW-Authenticate", "Basic")
-    err.status= 401
-    return next(err)
+    if(req.session.user === "authenticated")
+    {
+      return next()
+    }
+    else
+    {
+      const err = new Error("You are not authenticated!")
+        err.status= 401
+        return next(err)
+    }
   }
 }
 
 app.use(auth)
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use("/campsites", campsiteRouter)
 app.use("/promotions", promotionRouter)
 app.use("/partners", partnersRouter)
