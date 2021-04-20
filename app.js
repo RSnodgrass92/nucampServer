@@ -53,6 +53,9 @@ app.use(session(
   }
 ))
 
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
 //middle ware order matters, we put authentication check here if req does not pass, they will not move on to the rest
 function auth(req,res,next)
 {
@@ -62,44 +65,14 @@ function auth(req,res,next)
   //the singedCookies prop is provided by the cookie parser middleware
   if(!req.session.user)
   {
-      const authHeader = req.headers.authorization
-    
-      //if no username/pass has been entered yet
-      if(!authHeader)
-      {
         const err = new Error("You are not authenticated!")
-        res.setHeader("WWW-Authenticate", "Basic")
         err.status= 401
         return next(err)
-      }
-    
-      //Buffer is from node, we don't need to require it, it has a method called .from() that can be used to decode the 
-      //username and password from base 64
-      const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":")
-      const user= auth[0]
-      const pass= auth[1]
-    
-      if (user === "admin" && pass === "password")
-      {
-        //create a new cookie/session if the user is successfully validated
-        req.session.user = "admin"
-        //now the user has be authorized
-        return next()
-      }
-
-      else
-      {
-        const err = new Error("You are not authenticated!")
-        //res.setHeader("WWW-Authenticate", "Basic") is what asks the user for a pass and username
-        res.setHeader("WWW-Authenticate", "Basic")
-        err.status= 401
-        return next(err)
-      }
   }
 
   else
   {
-    if(req.session.user === "admin")
+    if(req.session.user === "authenticated")
     {
       return next()
     }
@@ -115,8 +88,6 @@ function auth(req,res,next)
 app.use(auth)
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use("/campsites", campsiteRouter)
 app.use("/promotions", promotionRouter)
 app.use("/partners", partnersRouter)
