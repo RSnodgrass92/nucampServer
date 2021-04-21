@@ -64,6 +64,7 @@ promotionRouter.route(`/:promotionId`)
 
 .post((req,res)=>
 {
+    res.statusCode= 403
     res.end(`POST operation not supported on /promotions/${req.params.promotionId}`)
 })
 

@@ -64,6 +64,7 @@ partnerRouter.route(`/:partnerId`)
 
 .post((req,res)=>
 {
+    res.statusCode= 403
     res.end(`POST operation not supported on /partners/${req.params.partnerId}`)
 })
 

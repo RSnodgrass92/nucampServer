@@ -64,6 +64,7 @@ campsiteRouter.route(`/:campsiteId`)
 
 .post((req,res)=>
 {
+    res.statusCode=403
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`)
 })
 
