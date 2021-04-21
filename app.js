@@ -6,6 +6,8 @@ var logger = require('morgan');
 const session = require("express-session")
 //calls the require function which returns a function, which is then passed the session argument and run
 const FileStore= require("session-file-store")(session)
+const passport= require("passport")
+const authenticate= require("./authenticate")
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -53,17 +55,19 @@ app.use(session(
   }
 ))
 
+//these two are only required when using session based authentication
+app.use(passport.initialize())
+app.use(passport.session())
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 //middle ware order matters, we put authentication check here if req does not pass, they will not move on to the rest
 function auth(req,res,next)
 {
-  //the session middleware will add a prop called session to the request object 
-  console.log(req.session);
+  console.log(req.user);
 
-  //the singedCookies prop is provided by the cookie parser middleware
-  if(!req.session.user)
+  if(!req.user)
   {
         const err = new Error("You are not authenticated!")
         err.status= 401
@@ -72,16 +76,7 @@ function auth(req,res,next)
 
   else
   {
-    if(req.session.user === "authenticated")
-    {
       return next()
-    }
-    else
-    {
-      const err = new Error("You are not authenticated!")
-        err.status= 401
-        return next(err)
-    }
   }
 }
 
