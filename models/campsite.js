@@ -19,8 +19,10 @@ const commentSchema= new Schema({
         required: true, 
     },
     author:{
-        type: String, 
-        required: true,
+        //this type utilizes mongoose population stores a reference to a user document
+        type: mongoose.Schema.Types.ObjectId, 
+        //holds the name of model for the document
+        ref:"User"
     }
 }, 
 {
