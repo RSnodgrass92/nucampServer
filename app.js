@@ -1,13 +1,9 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const session = require("express-session")
-//calls the require function which returns a function, which is then passed the session argument and run
-const FileStore= require("session-file-store")(session)
 const passport= require("passport")
-const authenticate= require("./authenticate")
+const config = require("./config")
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -18,7 +14,7 @@ const partnersRouter = require("./routes/partnersRouter")
 //*connect to the mongo db server
 const mongoose= require("mongoose")
 
-const url = "mongodb://localhost:27017/nucampsite"
+const url = config.mongoUrl
 const connect = mongoose.connect(url,{
   useCreateIndex: true, 
   useFindAndModify: false, 
@@ -40,47 +36,13 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-//pass in a secret key here, it could be any string
-//app.use(cookieParser("secretkey")); Express session offers its own implementation of cookies.
-//using both can cause conflicts so we will not use cookieParser
-app.use(session(
-  {
-    name: "session-id", 
-    secret: "secretkey", 
-    //saveUnintialized when a new session is created but no updates are made to it, at the end of the req it wont get saved. No cookie is sent to the client, this is to prevent having a bunch of empty session files and cookies from being set up. 
-    saveUninitialized: false, 
-    resave: false, 
-    //save to hard disk not just running application memory
-    store: new FileStore()
-  }
-))
-
-//these two are only required when using session based authentication
 app.use(passport.initialize())
-app.use(passport.session())
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 //middle ware order matters, we put authentication check here if req does not pass, they will not move on to the rest
-function auth(req,res,next)
-{
-  console.log(req.user);
 
-  if(!req.user)
-  {
-        const err = new Error("You are not authenticated!")
-        err.status= 401
-        return next(err)
-  }
-
-  else
-  {
-      return next()
-  }
-}
-
-app.use(auth)
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/campsites", campsiteRouter)
