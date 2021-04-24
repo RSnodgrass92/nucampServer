@@ -58,3 +58,19 @@ exports.jwtPassport = passport.use(
 
 //use this to make sure that an incoming request is coming from a authenticated user this is set up as a shortcut
 exports.verifyUser = passport.authenticate("jwt",{session: false})
+
+exports.verifyAdmin = (req,res,next) => {
+   
+    if(req.user.admin)
+    {
+        return next()
+    }
+
+    else
+    {
+        
+        const err = new Error(`You are not authorized to perform this operation!`)
+        err.status= 403
+        return next(err)
+    }
+}
