@@ -5,6 +5,7 @@ const cors = require('./cors')
 
 const favoriteRouter = express.Router()
 
+//* /favorites Endpoints
 favoriteRouter
  .route('/')
   .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
@@ -20,25 +21,32 @@ favoriteRouter
   })
   .post(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
     Favorite.findOne({ user: req.user._id }).then(favorite => {
-      if (favorite) {
-        req.body.forEach(campsite => {
-          if (!favorite.campsites.includes(campsite._id)) {
-            favorite.campsites.push(campsite._id)
+      if (favorite) 
+      {
+        for(let x=0; x<req.body.length; x++)
+        {
+          if(!favorite.campsites.includes(req.body[x]))
+          {
+            favorite.campsites.push(req.body[x])
           }
-        })
+        }
         favorite.save().then(fav => {
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
           res.json(fav)
         })
-      } else {
+      } 
+      else 
+      {
         Favorite.create({ user: req.user._id })
           .then(favorite => {
-            req.body.forEach(campsite => {
-              if (!favorite.campsites.includes(campsite._id)) {
-                favorite.campsites.push(campsite._id)
-              }
-            })
+            for(let x=0; x<req.body.length; x++)
+                  {
+                    if(!favorite.campsites.includes(req.body[x]))
+                    {
+                      favorite.campsites.push(req.body[x])
+                    }
+                  }
             favorite.save().then(fav => {
               res.statusCode = 200
               res.setHeader('Content-Type', 'application/json')
@@ -56,11 +64,14 @@ favoriteRouter
   .delete(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
     Favorite.findOneAndDelete({ user: req.user._id })
       .then(response => {
-        if (response) {
+        if (response) 
+        {
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
           res.json(response)
-        } else {
+        } 
+        else 
+        {
           res.setHeader('Content-Type', 'text/plain')
           res.end('You do not have any favorites to delete.')
         }
@@ -68,6 +79,8 @@ favoriteRouter
       .catch(err => next(err))
   })
 
+
+//* /favorites/campsiteID ENDPOINTS
   favoriteRouter
   .route('/:campsiteId')
   .options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
@@ -77,19 +90,29 @@ favoriteRouter
   })
   .post(cors.corsWithOptions, authenticate.verifyUser, (req, res) => {
     Favorite.findOne({ user: req.user._id }).then(favorite => {
-      if (favorite) {
-        if (!favorite.campsites.includes(req.params.campsiteId)) {
+      if (favorite) 
+      {
+        if (!favorite.campsites.includes(req.params.campsiteId)) 
+        {
           favorite.campsites.push(req.params.campsiteId)
-        }
-        favorite.save().then(fav => {
+          favorite.save().then(fav => {
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
           res.json(fav)
         })
-      } else {
+        }
+        else
+        {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'text/plain')
+          res.end("That campsite is already in the list of favorites!")
+        }
+      } 
+      else {
         Favorite.create({ user: req.user._id })
           .then(favorite => {
-            if (!favorite.campsites.includes(req.params.campsiteId)) {
+            if (!favorite.campsites.includes(req.params.campsiteId)) 
+            {
               favorite.campsites.push(req.params.campsiteId)
             }
             favorite.save().then(fav => {
@@ -108,9 +131,11 @@ favoriteRouter
   })
   .delete(cors.corsWithOptions, authenticate.verifyUser, (req, res) => {
     Favorite.findOne({ user: req.user._id }).then(favorite => {
-      if (favorite) {
+      if (favorite) 
+      {
         const index = favorite.campsites.indexOf(req.params.campsiteId)
-        if (index >= 0) {
+        if (index >= 0) 
+        {
           favorite.campsites.splice(index, 1)
         }
         favorite.save().then(fav => {
@@ -118,7 +143,9 @@ favoriteRouter
           res.setHeader('Content-Type', 'application/json')
           res.json(fav)
         })
-      } else {
+      } 
+      else 
+      {
         res.statusCode = 200
         res.setHeader('Content-Type', 'text/plain')
         res.end('there are no favorites to delete')
